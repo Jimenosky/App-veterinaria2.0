@@ -21,8 +21,10 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === 'login';
 
     if (!user && !inAuthGroup) {
+      console.log('User is null, redirecting to login...');
       router.replace('/login');
     } else if (user && inAuthGroup) {
+      console.log('User logged in, redirecting to home...');
       router.replace('/');
     }
   }, [user, segments, isLoading]);

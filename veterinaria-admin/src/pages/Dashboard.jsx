@@ -24,21 +24,30 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const [citasRes, usuariosRes] = await Promise.all([
-        apiClient.get('/citas/admin/all'),
-        apiClient.get('/auth/profile'),
+        apiClient.get('/citas/admin/all').catch(() => ({ data: { success: false, data: [] } })),
+        apiClient.get('/users?limit=1000').catch(() => ({ data: { success: false, data: [] } })),
       ]);
 
       let pendientes = 0;
-      if (citasRes.data.success) {
+      let totalCitas = 0;
+      let totalUsuarios = 0;
+      
+      if (citasRes.data.success && citasRes.data.data) {
         const citas = citasRes.data.data;
+        totalCitas = citas.length;
         pendientes = citas.filter((c) => c.estado === 'pendiente').length;
-        setStats({
-          totalCitas: citas.length,
-          totalUsuarios: citas.length > 0 ? new Set(citas.map((c) => c.usuario_id)).size : 0,
-          citasPendientes: pendientes,
-          totalMascotas: 0,
-        });
       }
+      
+      if (usuariosRes.data.success && usuariosRes.data.data) {
+        totalUsuarios = usuariosRes.data.data.length;
+      }
+      
+      setStats({
+        totalCitas,
+        totalUsuarios,
+        citasPendientes: pendientes,
+        totalMascotas: 0,
+      });
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {

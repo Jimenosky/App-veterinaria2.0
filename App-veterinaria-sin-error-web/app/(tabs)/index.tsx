@@ -16,12 +16,12 @@ export default function HomeScreen() {
   const quickActions = [
     { id: 1, title: 'Sacar Cita', icon: '📅', action: () => router.push('/(tabs)/explore') },
     { id: 2, title: 'Mis Mascotas', icon: '🐾', action: () => router.push('/(tabs)/explore') },
-    { id: 3, title: 'Mi Perfil', icon: '👤', action: () => router.push('/profile') },
+    { id: 3, title: 'Mi Perfil', icon: '👤', action: () => router.push('/(tabs)/profile') },
     { id: 4, title: 'Historial', icon: '📋', action: () => router.push('/(tabs)/explore') },
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
+    <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <Text style={[styles.welcomeTitle, { color: textColor }]}>
           Hola, {user?.nombre}! 👋
@@ -91,6 +91,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 100,
+  },
   header: {
     padding: 20,
     paddingTop: 40,
@@ -127,15 +130,18 @@ const styles = StyleSheet.create({
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    marginHorizontal: -5,
   },
   actionCard: {
-    flex: 1,
-    minWidth: '45%',
+    width: '48%',
+    marginHorizontal: '1%',
+    marginBottom: 12,
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 100,
   },
   actionIcon: {
     fontSize: 32,

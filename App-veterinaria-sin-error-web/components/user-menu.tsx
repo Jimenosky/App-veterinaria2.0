@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,22 +12,37 @@ export default function UserMenu({ collapsed = false }: UserMenuProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro de que deseas cerrar sesión?',
-      [
-        { text: 'Cancelar', onPress: () => setIsOpen(false) },
-        {
-          text: 'Cerrar sesión',
-          onPress: async () => {
-            setIsOpen(false);
-            await logout();
+  const handleLogout = async () => {
+    console.log('handleLogout called');
+    
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('¿Estás seguro de que deseas cerrar sesión?');
+      console.log('Web confirm result:', confirmed);
+      if (confirmed) {
+        setIsOpen(false);
+        console.log('Calling logout...');
+        await logout();
+        console.log('Logout completed, redirecting...');
+        router.replace('/login');
+      }
+    } else {
+      Alert.alert(
+        'Cerrar sesión',
+        '¿Estás seguro de que deseas cerrar sesión?',
+        [
+          { text: 'Cancelar', onPress: () => setIsOpen(false) },
+          {
+            text: 'Cerrar sesión',
+            onPress: async () => {
+              setIsOpen(false);
+              await logout();
+              router.replace('/login');
+            },
+            style: 'destructive',
           },
-          style: 'destructive',
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleNavigateToProfile = () => {

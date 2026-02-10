@@ -96,15 +96,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       console.log('Logging out...');
-      setUser(null);
-      setToken(null);
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
-      console.log('Logout successful');
+      setToken(null);
+      setUser(null);
+      console.log('Logout successful, storage cleared');
     } catch (error) {
       console.error('Logout error:', error);
-      setUser(null);
       setToken(null);
+      setUser(null);
     }
   };
 

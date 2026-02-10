@@ -13,14 +13,17 @@ export default function UsuariosTable() {
   const loadUsuarios = async () => {
     try {
       setLoading(true);
-      // Nota: podríamos crear un endpoint /usuarios/admin/all en el backend
-      // Por ahora, obtenemos usuarios desde el perfil
-      const response = await apiClient.get('/auth/profile');
+      // Obtener todos los usuarios del endpoint correcto sin límite
+      const response = await apiClient.get('/users?limit=10000');
       if (response.data.success) {
-        setUsuarios([response.data.data]);
+        console.log('Usuarios cargados:', response.data.data.length);
+        console.log('Paginación:', response.data.pagination);
+        setUsuarios(response.data.data || []);
       }
     } catch (error) {
       console.error('Error loading usuarios:', error);
+      // Si falla, mostrar array vacío en lugar de error
+      setUsuarios([]);
     } finally {
       setLoading(false);
     }
@@ -59,11 +62,11 @@ export default function UsuariosTable() {
                     <td>{usuario.email}</td>
                     <td>{usuario.telefono || '-'}</td>
                     <td>
-                      <span className={`role-badge ${usuario.rol}`}>
+                      <span className={`role-badge ${usuario.rol || 'cliente'}`}>
                         {usuario.rol === 'admin' ? '🔑 Admin' : '👤 Cliente'}
                       </span>
                     </td>
-                    <td>{new Date(usuario.fecha_creacion).toLocaleDateString()}</td>
+                    <td>{new Date(usuario.created_at || usuario.fecha_creacion).toLocaleDateString()}</td>
                   </tr>
                 ))
               ) : (
