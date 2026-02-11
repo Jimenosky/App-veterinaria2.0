@@ -1,0 +1,7 @@
+# Configuración para Netlify
+# Este archivo maneja las rutas de React Router correctamente
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
