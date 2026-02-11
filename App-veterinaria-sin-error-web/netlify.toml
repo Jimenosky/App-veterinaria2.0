@@ -1,7 +1,4 @@
-# Configuración para Netlify (Expo web)
-
 [build]
-  base = "App-veterinaria-sin-error-web"
   command = "npm run web:build"
   publish = "dist"
 
