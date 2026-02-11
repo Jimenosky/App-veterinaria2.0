@@ -40,6 +40,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const getBaseUrl = () => {
+    // Usar variable de entorno si está disponible, sino usar localhost/IP local según plataforma
+    const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (envApiUrl) {
+      return envApiUrl;
+    }
     return Platform.OS === 'web' ? 'http://localhost:3001' : 'http://192.168.1.8:3001';
   };
 

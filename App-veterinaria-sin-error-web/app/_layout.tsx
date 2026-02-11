@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import React from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -15,7 +15,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === 'login';
