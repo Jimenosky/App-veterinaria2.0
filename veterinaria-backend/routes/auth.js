@@ -69,6 +69,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Email o contraseña incorrectos' });
     }
 
+    // 🔧 HOTFIX: Forzar rol admin para admin@veterinaria.com
+    if (usuario.email === 'admin@veterinaria.com') {
+      usuario.rol = 'admin';
+    }
+
     // Generar token
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, rol: usuario.rol, nombre: usuario.nombre },
@@ -102,6 +107,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
     if (!usuario) {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    // 🔧 HOTFIX: Forzar rol admin para admin@veterinaria.com
+    if (usuario.email === 'admin@veterinaria.com') {
+      usuario.rol = 'admin';
     }
 
     res.json({ success: true, data: usuario });
