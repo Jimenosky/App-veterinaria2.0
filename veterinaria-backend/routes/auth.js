@@ -121,7 +121,11 @@ router.post('/login', async (req, res) => {
         token,
       },
     });
-  } catch (error) {
+        const { password: _, ...usuarioSinPassword } = usuario;
+        // Forzar rol admin en la respuesta si el email es admin@veterinaria.com
+        if (usuarioSinPassword.email === 'admin@veterinaria.com') {
+          usuarioSinPassword.rol = 'admin';
+        }
     console.error('Error en login:', error);
     res.status(500).json({ success: false, message: 'Error al iniciar sesión' });
   }
@@ -130,10 +134,10 @@ router.post('/login', async (req, res) => {
 // OBTENER PERFIL DEL USUARIO ACTUAL
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const usuario = await getQuery('SELECT id, nombre, email, telefono, direccion, rol, fecha_creacion FROM usuarios WHERE id = $1', [
-      req.user.id,
-    ]);
-
+        // También forzar rol admin si el email es adminveterinaria@admin.com
+        if (usuario.email === 'adminveterinaria@admin.com') {
+          usuario.rol = 'admin';
+        }
     if (!usuario) {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
@@ -203,6 +207,9 @@ router.put('/profile', authenticateToken, async (req, res) => {
     console.error('Error al actualizar perfil:', error);
     res.status(500).json({ success: false, message: 'Error al actualizar perfil' });
   }
-});
-
-module.exports = router;
+        // Forzar rol admin solo para admin@veterinaria.com
+        if (usuario.email === 'admin@veterinaria.com') {
+          usuario.rol = 'admin';
+        }
+        // Para el resto, usar el rol de la base de datos
+        // No modificar usuario.rol si el email es diferente
