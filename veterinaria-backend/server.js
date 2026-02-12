@@ -12,6 +12,7 @@ const citasRoutes = require('./routes/citas');
 const fixRoleRoutes = require('./routes/fix-role');
 const debugRoutes = require('./routes/debug');
 const recreateAdminRoutes = require('./routes/recreate-admin');
+const usersRoutes = require('./routes/users');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/v1/citas', citasRoutes);
 app.use('/api/v1/fix', fixRoleRoutes);
 app.use('/api/v1/debug', debugRoutes);
 app.use('/api/v1/admin', recreateAdminRoutes);
+app.use('/api/v1/users', usersRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
