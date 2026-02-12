@@ -7,6 +7,35 @@ require('dotenv').config();
 
 const router = express.Router();
 
+// ENDPOINT DE EMERGENCIA: Crear admin directo
+router.post('/create-admin-direct', async (req, res) => {
+  try {
+    // Eliminar si existe
+    await runQuery("DELETE FROM usuarios WHERE email = $1", ['adminveterinaria@admin.com']);
+    
+    const hashedPassword = await bcrypt.hash('admin123456', 10);
+    
+    const result = await runQuery(
+      'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, rol',
+      ['Admin Sistema', 'adminveterinaria@admin.com', hashedPassword, '+34-999-999-999', 'Sistema', 'admin']
+    );
+    
+    console.log('✅ Admin creado:', result.rows[0]);
+    
+    res.json({
+      success: true,
+      message: 'Admin creado con éxito',
+      email: 'adminveterinaria@admin.com',
+      password: 'admin123456',
+      rol: 'admin',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // REGISTRO DE NUEVO USUARIO
 router.post('/register', async (req, res) => {
   try {
