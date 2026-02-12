@@ -9,6 +9,7 @@ const seedDatabase = require('./seed');
 const authRoutes = require('./routes/auth');
 const mascotasRoutes = require('./routes/mascotas');
 const citasRoutes = require('./routes/citas');
+const fixRoleRoutes = require('./routes/fix-role');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/mascotas', mascotasRoutes);
 app.use('/api/v1/citas', citasRoutes);
+app.use('/api/v1/fix', fixRoleRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
