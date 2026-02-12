@@ -11,6 +11,7 @@ const mascotasRoutes = require('./routes/mascotas');
 const citasRoutes = require('./routes/citas');
 const fixRoleRoutes = require('./routes/fix-role');
 const debugRoutes = require('./routes/debug');
+const recreateAdminRoutes = require('./routes/recreate-admin');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/v1/mascotas', mascotasRoutes);
 app.use('/api/v1/citas', citasRoutes);
 app.use('/api/v1/fix', fixRoleRoutes);
 app.use('/api/v1/debug', debugRoutes);
+app.use('/api/v1/admin', recreateAdminRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
