@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const mascotasRoutes = require('./routes/mascotas');
 const citasRoutes = require('./routes/citas');
 const fixRoleRoutes = require('./routes/fix-role');
+const debugRoutes = require('./routes/debug');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/mascotas', mascotasRoutes);
 app.use('/api/v1/citas', citasRoutes);
 app.use('/api/v1/fix', fixRoleRoutes);
+app.use('/api/v1/debug', debugRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
