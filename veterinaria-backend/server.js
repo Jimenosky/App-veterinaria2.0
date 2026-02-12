@@ -8,6 +8,7 @@ const { initDatabase } = require('./config/database');
 const authRoutes = require('./routes/auth');
 const mascotasRoutes = require('./routes/mascotas');
 const citasRoutes = require('./routes/citas');
+const tempFixRoutes = require('./routes/temp-fix');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/mascotas', mascotasRoutes);
 app.use('/api/v1/citas', citasRoutes);
+app.use('/api/v1/temp', tempFixRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
