@@ -127,6 +127,17 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// OBTENER TODOS LOS USUARIOS
+router.get('/users', authenticateToken, async (req, res) => {
+  try {
+    const usuarios = await allQuery('SELECT id, nombre, email, telefono, direccion, rol, fecha_creacion FROM usuarios ORDER BY fecha_creacion DESC', []);
+    res.json({ success: true, data: usuarios });
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener usuarios' });
+  }
+});
+
 // OBTENER PERFIL DEL USUARIO ACTUAL
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
