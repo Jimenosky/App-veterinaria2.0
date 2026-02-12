@@ -30,7 +30,7 @@ app.use('/api/v1/admin', recreateAdminRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
-  res.json({ success: true, message: 'Backend funcionando correctamente con MySQL' });
+  res.json({ success: true, message: 'Backend funcionando correctamente con PostgreSQL/Neon' });
 });
 
 // Manejo de errores global
