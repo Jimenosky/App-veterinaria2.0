@@ -3,7 +3,8 @@ const { initDatabase, getQuery, runQuery } = require('./config/database');
 
 async function seedDatabase() {
   try {
-    await initDatabase();
+    // Si ya se inicializó, no llamar de nuevo
+    // await initDatabase();
 
     // Verificar si el admin ya existe
     const adminExists = await getQuery('SELECT * FROM usuarios WHERE email = $1', [
@@ -28,6 +29,13 @@ async function seedDatabase() {
       console.log('✅ Usuario admin creado: admin@veterinaria.com / password123');
     } else {
       console.log('✅ Usuario admin ya existe');
+      
+      // IMPORTANTE: Asegurar que el rol sea 'admin'
+      await runQuery(
+        'UPDATE usuarios SET rol = $1 WHERE email = $2',
+        ['admin', 'admin@veterinaria.com']
+      );
+      console.log('✅ Rol del admin verificado/actualizado a "admin"');
     }
 
     // Crear cliente de prueba
@@ -56,12 +64,21 @@ async function seedDatabase() {
     }
 
     console.log('\n📊 Base de datos lista para usar\n');
-    process.exit(0);
   } catch (error) {
     console.error('Error en seed:', error);
-    process.exit(1);
+    if (require.main === module) {
+      process.exit(1);
+    }
+    throw error;
   }
 }
 
-seedDatabase();
+// Solo ejecutar si se llama directamente como script
+if (require.main === module) {
+  seedDatabase().then(() => {
+    process.exit(0);
+  });
+}
+
+module.exports = seedDatabase;
 

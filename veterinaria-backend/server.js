@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { initDatabase } = require('./config/database');
+const seedDatabase = require('./seed');
 
 // Importar rutas
 const authRoutes = require('./routes/auth');
@@ -40,8 +41,12 @@ const PORT = process.env.PORT || 3001;
 
 (async () => {
   try {
-    console.log('🔄 Conectando a MySQL...');
+    console.log('🔄 Conectando a PostgreSQL...');
     await initDatabase();
+    
+    // Ejecutar seed para asegurar datos críticos
+    console.log('🌱 Ejecutando seed de datos...');
+    await seedDatabase();
     
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
