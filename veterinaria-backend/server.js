@@ -32,7 +32,7 @@ app.use('/api/v1/users', usersRoutes);
 
 // Ruta de prueba
 app.get('/api/v1/health', (req, res) => {
-  res.json({ success: true, message: 'Backend funcionando correctamente con PostgreSQL/Neon' });
+  res.json({ success: true, message: 'Backend ready - PostgreSQL/Neon connected' });
 });
 
 // Manejo de errores global
