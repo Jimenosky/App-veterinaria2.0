@@ -50,6 +50,14 @@ const PORT = process.env.PORT || 3001;
     console.log('🌱 Ejecutando seed de datos...');
     await seedDatabase();
     
+    // Asegurar que admin tenga rol correcto
+    const { runQuery } = require('./config/database');
+    await runQuery(
+      "UPDATE usuarios SET rol = $1 WHERE email = $2",
+      ['admin', 'admin@veterinaria.com']
+    );
+    console.log('✅ Rol admin verificado');
+    
     app.listen(PORT, () => {
       console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
       console.log(`📡 CORS habilitado para todas las direcciones`);
