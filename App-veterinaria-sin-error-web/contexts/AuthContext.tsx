@@ -68,7 +68,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const baseUrl = getBaseUrl();
+      let baseUrl = getBaseUrl();
+      // Evitar duplicación de /api/v1/
+      if (baseUrl.endsWith('/api/v1')) {
+        baseUrl = baseUrl.slice(0, -7); // Remover /api/v1 si ya está
+      }
       console.log('Attempting login to:', baseUrl, 'with email:', email);
       const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
         method: 'POST',
@@ -117,7 +121,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (!token) return false;
 
-      const baseUrl = getBaseUrl();
+      let baseUrl = getBaseUrl();
+      // Evitar duplicación de /api/v1/
+      if (baseUrl.endsWith('/api/v1')) {
+        baseUrl = baseUrl.slice(0, -7); // Remover /api/v1 si ya está
+      }
       const response = await fetch(`${baseUrl}/api/v1/auth/profile`, {
         method: 'PUT',
         headers: {
