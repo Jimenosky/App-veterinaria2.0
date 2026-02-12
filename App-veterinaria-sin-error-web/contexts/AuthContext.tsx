@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const baseUrl = getBaseUrl();
       console.log('Attempting login to:', baseUrl, 'with email:', email);
-      const response = await fetch(`${baseUrl}/auth/login`, {
+      const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!token) return false;
 
       const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/auth/profile`, {
+      const response = await fetch(`${baseUrl}/api/v1/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

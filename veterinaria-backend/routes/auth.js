@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Verificar si el email ya existe
-    const usuarioExistente = await getQuery('SELECT * FROM usuarios WHERE email = ?', [email]);
+    const usuarioExistente = await getQuery('SELECT * FROM usuarios WHERE email = $1', [email]);
     if (usuarioExistente) {
       return res.status(400).json({ success: false, message: 'El email ya está registrado' });
     }
@@ -30,14 +30,14 @@ router.post('/register', async (req, res) => {
 
     // Insertar usuario
     const result = await runQuery(
-      'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
       [nombre, email, hashedPassword, telefono || null, direccion || null, 'cliente']
     );
 
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
-      data: { id: result.id, nombre, email },
+      data: { id: result.rows[0].id, nombre, email },
     });
   } catch (error) {
     console.error('Error en registro:', error);
@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Buscar usuario
-    const usuario = await getQuery('SELECT * FROM usuarios WHERE email = ?', [email]);
+    const usuario = await getQuery('SELECT * FROM usuarios WHERE email = $1', [email]);
     if (!usuario) {
       return res.status(401).json({ success: false, message: 'Email o contraseña incorrectos' });
     }
@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
     // Generar token
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, rol: usuario.rol, nombre: usuario.nombre },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your-secret-key-change-this',
       { expiresIn: '7d' }
     );
 
@@ -96,7 +96,7 @@ router.post('/login', async (req, res) => {
 // OBTENER PERFIL DEL USUARIO ACTUAL
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const usuario = await getQuery('SELECT id, nombre, email, telefono, direccion, rol, fecha_creacion FROM usuarios WHERE id = ?', [
+    const usuario = await getQuery('SELECT id, nombre, email, telefono, direccion, rol, fecha_creacion FROM usuarios WHERE id = $1', [
       req.user.id,
     ]);
 
@@ -119,34 +119,39 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     let updateQuery = 'UPDATE usuarios SET ';
     const params = [];
+    let paramIndex = 1;
 
     if (nombre) {
-      updateQuery += 'nombre = ?, ';
+      updateQuery += `nombre = $${paramIndex}, `;
       params.push(nombre);
+      paramIndex++;
     }
     if (telefono) {
-      updateQuery += 'telefono = ?, ';
+      updateQuery += `telefono = $${paramIndex}, `;
       params.push(telefono);
+      paramIndex++;
     }
     if (direccion) {
-      updateQuery += 'direccion = ?, ';
+      updateQuery += `direccion = $${paramIndex}, `;
       params.push(direccion);
+      paramIndex++;
     }
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      updateQuery += 'password = ?, ';
+      updateQuery += `password = $${paramIndex}, `;
       params.push(hashedPassword);
+      paramIndex++;
     }
 
     // Remover última coma
     updateQuery = updateQuery.slice(0, -2);
-    updateQuery += ' WHERE id = ?';
+    updateQuery += ` WHERE id = $${paramIndex}`;
     params.push(usuarioId);
 
     await runQuery(updateQuery, params);
 
-    const usuarioActualizado = await getQuery('SELECT id, nombre, email, telefono, direccion, rol FROM usuarios WHERE id = ?', [
+    const usuarioActualizado = await getQuery('SELECT id, nombre, email, telefono, direccion, rol FROM usuarios WHERE id = $1', [
       usuarioId,
     ]);
 

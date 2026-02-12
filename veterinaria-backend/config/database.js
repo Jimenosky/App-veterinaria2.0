@@ -1,58 +1,52 @@
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 let pool = null;
 
 const initDatabase = async () => {
   try {
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'usuarios_db',
-      port: process.env.DB_PORT || 3306,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 
     // Probar conexión
-    const connection = await pool.getConnection();
-    console.log('✅ Conectado a MySQL exitosamente');
-    connection.release();
+    const client = await pool.connect();
+    console.log('✅ Conectado a PostgreSQL exitosamente');
+    client.release();
 
     // Crear tablas si no existen
     await createTables();
 
     return pool;
   } catch (error) {
-    console.error('Error al conectar a MySQL:', error.message);
+    console.error('Error al conectar a PostgreSQL:', error.message);
     throw error;
   }
 };
 
 const createTables = async () => {
-  const connection = await pool.getConnection();
+  const client = await pool.connect();
   try {
     // Tabla de Usuarios
-    await connection.execute(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         nombre VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         telefono VARCHAR(20),
         direccion VARCHAR(255),
-        rol ENUM('cliente', 'admin') DEFAULT 'cliente',
+        rol VARCHAR(20) DEFAULT 'cliente' CHECK (rol IN ('cliente', 'admin')),
         estado VARCHAR(50) DEFAULT 'activo',
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      )
     `);
 
     // Tabla de Mascotas
-    await connection.execute(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS mascotas (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         nombre VARCHAR(255) NOT NULL,
         tipo VARCHAR(100) NOT NULL,
         raza VARCHAR(100),
@@ -60,40 +54,52 @@ const createTables = async () => {
         peso DECIMAL(5, 2),
         usuario_id INT NOT NULL,
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-        INDEX idx_usuario (usuario_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Crear índice si no existe
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_mascotas_usuario ON mascotas(usuario_id)
     `);
 
     // Tabla de Citas
-    await connection.execute(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS citas (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         usuario_id INT NOT NULL,
         mascota_id INT NOT NULL,
         fecha DATE NOT NULL,
         hora TIME NOT NULL,
         tipo_servicio VARCHAR(255) NOT NULL,
         descripcion TEXT,
-        estado ENUM('pendiente', 'confirmada', 'completada', 'cancelada') DEFAULT 'pendiente',
+        estado VARCHAR(20) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'confirmada', 'completada', 'cancelada')),
         costo DECIMAL(10, 2),
         notas_admin TEXT,
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-        FOREIGN KEY (mascota_id) REFERENCES mascotas(id) ON DELETE CASCADE,
-        INDEX idx_usuario (usuario_id),
-        INDEX idx_mascota (mascota_id),
-        INDEX idx_fecha (fecha)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        FOREIGN KEY (mascota_id) REFERENCES mascotas(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Crear índices si no existen
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_citas_usuario ON citas(usuario_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_citas_mascota ON citas(mascota_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_citas_fecha ON citas(fecha)
     `);
 
     console.log('✅ Tablas de base de datos verificadas');
   } catch (error) {
-    if (error.code !== 'ER_TABLE_EXISTS_ERROR') {
+    if (error.code !== '42P07') { // 42P07 = table already exists
       throw error;
     }
   } finally {
-    connection.release();
+    client.release();
   }
 };
 
@@ -105,32 +111,32 @@ const getPool = () => {
 };
 
 const runQuery = async (query, params = []) => {
-  const connection = await getPool().getConnection();
+  const client = await getPool().connect();
   try {
-    const [result] = await connection.execute(query, params);
+    const result = await client.query(query, params);
     return result;
   } finally {
-    connection.release();
+    client.release();
   }
 };
 
 const getQuery = async (query, params = []) => {
-  const connection = await getPool().getConnection();
+  const client = await getPool().connect();
   try {
-    const [rows] = await connection.execute(query, params);
-    return rows[0];
+    const result = await client.query(query, params);
+    return result.rows[0];
   } finally {
-    connection.release();
+    client.release();
   }
 };
 
 const allQuery = async (query, params = []) => {
-  const connection = await getPool().getConnection();
+  const client = await getPool().connect();
   try {
-    const [rows] = await connection.execute(query, params);
-    return rows;
+    const result = await client.query(query, params);
+    return result.rows;
   } finally {
-    connection.release();
+    client.release();
   }
 };
 

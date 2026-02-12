@@ -6,7 +6,7 @@ async function seedDatabase() {
     await initDatabase();
 
     // Verificar si el admin ya existe
-    const adminExists = await getQuery('SELECT * FROM usuarios WHERE email = ?', [
+    const adminExists = await getQuery('SELECT * FROM usuarios WHERE email = $1', [
       'admin@veterinaria.com',
     ]);
 
@@ -14,7 +14,7 @@ async function seedDatabase() {
       const hashedPassword = await bcrypt.hash('password123', 10);
 
       await runQuery(
-        'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES ($1, $2, $3, $4, $5, $6)',
         [
           'Administrador',
           'admin@veterinaria.com',
@@ -31,7 +31,7 @@ async function seedDatabase() {
     }
 
     // Crear cliente de prueba
-    const clientExists = await getQuery('SELECT * FROM usuarios WHERE email = ?', [
+    const clientExists = await getQuery('SELECT * FROM usuarios WHERE email = $1', [
       'cliente@ejemplo.com',
     ]);
 
@@ -39,7 +39,7 @@ async function seedDatabase() {
       const hashedPassword = await bcrypt.hash('cliente123', 10);
 
       await runQuery(
-        'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES ($1, $2, $3, $4, $5, $6)',
         [
           'Cliente Ejemplo',
           'cliente@ejemplo.com',
