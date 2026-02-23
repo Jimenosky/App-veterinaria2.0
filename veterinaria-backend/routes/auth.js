@@ -39,6 +39,7 @@ router.post('/create-admin-direct', async (req, res) => {
 // REGISTRO DE NUEVO USUARIO
 router.post('/register', async (req, res) => {
   try {
+    console.log('POST /register body:', req.body);
     const { nombre, email, password, telefono, direccion } = req.body;
 
     if (!nombre || !email || !password) {

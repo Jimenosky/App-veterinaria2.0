@@ -4,6 +4,23 @@ const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ADMIN: OBTENER TODAS LAS MASCOTAS DE TODOS LOS USUARIOS
+router.get('/admin/all', authenticateAdmin, async (req, res) => {
+  try {
+    const mascotas = await allQuery(`
+      SELECT m.*, u.nombre as usuario_nombre, u.email as usuario_email 
+      FROM mascotas m 
+      LEFT JOIN usuarios u ON m.usuario_id = u.id 
+      ORDER BY m.fecha_creacion DESC
+    `);
+
+    res.json({ success: true, data: mascotas });
+  } catch (error) {
+    console.error('Error al obtener todas las mascotas:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener mascotas' });
+  }
+});
+
 // OBTENER TODAS LAS MASCOTAS DEL USUARIO
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -21,7 +38,10 @@ router.get('/', authenticateToken, async (req, res) => {
 // CREAR NUEVA MASCOTA
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { nombre, tipo, raza, edad, peso } = req.body;
+    const { nombre, tipo, raza, edad, peso, color } = req.body;
+
+    console.log('POST /mascotas - Usuario:', req.user.id);
+    console.log('Datos recibidos:', { nombre, tipo, raza, edad, peso, color });
 
     if (!nombre || !tipo) {
       return res.status(400).json({
@@ -31,18 +51,24 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const result = await runQuery(
-      'INSERT INTO mascotas (nombre, tipo, raza, edad, peso, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [nombre, tipo, raza || null, edad || null, peso || null, req.user.id]
+      'INSERT INTO mascotas (nombre, tipo, raza, edad, peso, color, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [nombre, tipo, raza || null, edad || null, peso || null, color || null, req.user.id]
     );
+
+    console.log('Mascota creada exitosamente, ID:', result.id);
 
     res.status(201).json({
       success: true,
       message: 'Mascota creada exitosamente',
-      data: { id: result.id, nombre, tipo, raza, edad, peso, usuario_id: req.user.id },
+      data: { id: result.id, nombre, tipo, raza, edad, peso, color, usuario_id: req.user.id },
     });
   } catch (error) {
     console.error('Error al crear mascota:', error);
-    res.status(500).json({ success: false, message: 'Error al crear mascota' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al crear mascota en el servidor',
+      error: error.message 
+    });
   }
 });
 
@@ -65,7 +91,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // ACTUALIZAR MASCOTA
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { nombre, tipo, raza, edad, peso } = req.body;
+    const { nombre, tipo, raza, edad, peso, color } = req.body;
     const mascotaId = req.params.id;
 
     // Verificar que la mascota pertenece al usuario
@@ -76,16 +102,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const updateQuery = `
       UPDATE mascotas 
-      SET nombre = ?, tipo = ?, raza = ?, edad = ?, peso = ? 
+      SET nombre = ?, tipo = ?, raza = ?, edad = ?, peso = ?, color = ?
       WHERE id = ? AND usuario_id = ?
     `;
 
-    await runQuery(updateQuery, [nombre || mascota.nombre, tipo || mascota.tipo, raza || mascota.raza, edad || mascota.edad, peso || mascota.peso, mascotaId, req.user.id]);
+    await runQuery(updateQuery, [
+      nombre || mascota.nombre, 
+      tipo || mascota.tipo, 
+      raza || mascota.raza, 
+      edad || mascota.edad, 
+      peso || mascota.peso, 
+      color || mascota.color,
+      mascotaId, 
+      req.user.id
+    ]);
 
     res.json({
       success: true,
       message: 'Mascota actualizada',
-      data: { id: mascotaId, nombre, tipo, raza, edad, peso },
+      data: { id: mascotaId, nombre, tipo, raza, edad, peso, color },
     });
   } catch (error) {
     console.error('Error al actualizar mascota:', error);
