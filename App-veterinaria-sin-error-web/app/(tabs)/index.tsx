@@ -1,174 +1,323 @@
-import { ScrollView, StyleSheet, View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
-import UserMenu from '@/components/user-menu';
 import { useRouter } from 'expo-router';
 
-export default function HomeScreen() {
-  const { user } = useAuth();
+import HomeView from './home';
+import CitasView from './citas';
+import MascotasView from './mascotas';
+import TratamientosView from './tratamientos';
+import HistorialView from './historial';
+import ProfileScreen from './profile';
+
+export default function ClientScreen() {
+  const { user, logout } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [currentView, setCurrentView] = useState('inicio');
+  const [slideAnim] = useState(new Animated.Value(-300));
 
-  const isDark = colorScheme === 'dark';
-  const textColor = isDark ? '#fff' : '#333';
-  const bgColor = isDark ? '#1a1a1a' : '#f5f5f5';
-  const cardBg = isDark ? '#2a2a2a' : '#fff';
+  const toggleMenu = () => {
+    if (menuVisible) {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setMenuVisible(false));
+    } else {
+      setMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
-  const quickActions = [
-    { id: 1, title: 'Sacar Cita', icon: '📅', action: () => router.push('/(tabs)/explore') },
-    { id: 2, title: 'Mis Mascotas', icon: '🐾', action: () => router.push('/(tabs)/explore') },
-    { id: 3, title: 'Mi Perfil', icon: '👤', action: () => router.push('/(tabs)/profile') },
-    { id: 4, title: 'Historial', icon: '📋', action: () => router.push('/(tabs)/explore') },
+  const closeMenu = () => {
+    if (menuVisible) {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setMenuVisible(false));
+    }
+  };
+
+  const navigateToView = (view: string) => {
+    setCurrentView(view);
+    closeMenu();
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
+  };
+
+  const getViewTitle = () => {
+    switch (currentView) {
+      case 'inicio': return 'Inicio';
+      case 'mascotas': return 'Mis Mascotas';
+      case 'citas': return 'Mis Citas';
+      case 'tratamientos': return 'Tratamientos';
+      case 'historial': return 'Historial Médico';
+      case 'perfil': return 'Mi Perfil';
+      default: return 'VetNova';
+    }
+  };
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'inicio':
+        return <HomeView onNavigate={navigateToView} />;
+      case 'mascotas':
+        return <MascotasView />;
+      case 'citas':
+        return <CitasView />;
+      case 'tratamientos':
+        return <TratamientosView />;
+      case 'historial':
+        return <HistorialView />;
+      case 'perfil':
+        return <ProfileScreen />;
+      default:
+        return <HomeView onNavigate={navigateToView} />;
+    }
+  };
+
+  const menuItems = [
+    { id: 'inicio', icon: 'home', label: 'Inicio' },
+    { id: 'mascotas', icon: 'paw', label: 'Mis Mascotas' },
+    { id: 'citas', icon: 'calendar', label: 'Mis Citas' },
+    { id: 'tratamientos', icon: 'medical', label: 'Tratamientos' },
+    { id: 'historial', icon: 'document-text', label: 'Historial Médico' },
+    { id: 'perfil', icon: 'person', label: 'Mi Perfil' },
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={[styles.welcomeTitle, { color: textColor }]}>
-          Hola, {user?.nombre}! 👋
-        </Text>
-        <Text style={[styles.welcomeSubtitle, { color: isDark ? '#aaa' : '#666' }]}>
-          Bienvenido al Sistema de Veterinaria
-        </Text>
-      </View>
-
-      <View style={styles.content}>
-        <UserMenu collapsed={false} />
-
-        <View style={[styles.section, { backgroundColor: cardBg }]}>
-          <Text style={[styles.sectionTitle, { color: textColor }]}>Acciones Rápidas</Text>
-          <View style={styles.actionGrid}>
-            {quickActions.map((action) => (
-              <TouchableOpacity
-                key={action.id}
-                style={[styles.actionCard, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}
-                onPress={action.action}
-              >
-                <Text style={styles.actionIcon}>{action.icon}</Text>
-                <Text style={[styles.actionText, { color: textColor }]}>
-                  {action.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={[styles.section, { backgroundColor: cardBg }]}>
-          <Text style={[styles.sectionTitle, { color: textColor }]}>Información</Text>
-          <View style={styles.infoBox}>
-            <Text style={[styles.infoLabel, { color: isDark ? '#aaa' : '#666' }]}>Email</Text>
-            <Text style={[styles.infoValue, { color: textColor }]}>{user?.email}</Text>
-          </View>
-          {user?.telefono && (
-            <View style={styles.infoBox}>
-              <Text style={[styles.infoLabel, { color: isDark ? '#aaa' : '#666' }]}>
-                Teléfono
-              </Text>
-              <Text style={[styles.infoValue, { color: textColor }]}>{user.telefono}</Text>
+    <View style={styles.container}>
+      {/* Header */}
+      <LinearGradient
+        colors={['#18181b', '#27272a', '#7c3aed']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <SafeAreaView>
+          <View style={styles.headerContent}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={toggleMenu}
+            >
+              <Ionicons name="menu" size={46} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.titleContainer}>
+              <Text style={styles.headerTitle}>{getViewTitle()}</Text>
             </View>
-          )}
-          <View style={styles.infoBox}>
-            <Text style={[styles.infoLabel, { color: isDark ? '#aaa' : '#666' }]}>Tipo</Text>
-            <Text style={[styles.infoValue, { color: textColor }]}>
-              {user?.rol === 'admin' ? '🔑 Administrador' : '👤 Cliente'}
-            </Text>
+            <View style={styles.pawContainer}>
+              <Ionicons name="paw" size={28} color="#fff" />
+            </View>
           </View>
-        </View>
+        </SafeAreaView>
+      </LinearGradient>
 
-        <View style={[styles.section, { backgroundColor: '#f0f8ff' }]}>
-          <Text style={[styles.sectionTitle, { color: '#1e40af' }]}>💡 Consejos</Text>
-          <Text style={[styles.tipsText, { color: '#1e40af' }]}>
-            • Recuerda agendar citas regulares para tus mascotas{'\n'}
-            • Mantén tu perfil actualizado con la información más reciente{'\n'}
-            • Revisa el estado de tus citas en la sección "Explora"
-          </Text>
-        </View>
+      {/* Content */}
+      <View style={styles.content}>
+        {renderCurrentView()}
       </View>
-    </ScrollView>
+
+      {/* Menu Drawer */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="none"
+        onRequestClose={closeMenu}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={closeMenu}
+        >
+          <Animated.View
+            style={[
+              styles.drawer,
+              {
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            <TouchableOpacity activeOpacity={1}>
+              <LinearGradient
+                colors={['#18181b', '#27272a']}
+                style={styles.drawerHeader}
+              >
+                <View style={styles.userAvatar}>
+                  <Ionicons name="person-circle" size={60} color="#7c3aed" />
+                </View>
+                <Text style={styles.userName}>{user?.nombre}</Text>
+                <Text style={styles.userRole}>Cliente</Text>
+              </LinearGradient>
+
+              <View style={styles.menuList}>
+                {menuItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.menuItem,
+                      currentView === item.id && styles.menuItemActive,
+                    ]}
+                    onPress={() => navigateToView(item.id)}
+                  >
+                    <Ionicons
+                      name={item.icon as any}
+                      size={24}
+                      color={currentView === item.id ? '#7c3aed' : '#a1a1aa'}
+                    />
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        currentView === item.id && styles.menuItemTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                <View style={styles.divider} />
+
+                <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={handleLogout}
+                >
+                  <Ionicons name="log-out" size={24} color="#ef4444" />
+                  <Text style={styles.logoutText}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 100,
+    backgroundColor: '#18181b',
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 20,
-    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    paddingTop: 0,
+    paddingBottom: 8,
   },
-  welcomeTitle: {
-    fontSize: 28,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 2,
+  },
+  menuButton: {
+    padding: 10,
+    width: 66,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
+    color: '#fff',
   },
-  welcomeSubtitle: {
-    fontSize: 14,
+  pawContainer: {
+    width: 66,
+    alignItems: 'flex-end',
+    paddingRight: 10,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    flex: 1,
   },
-  section: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  drawer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 280,
+    backgroundColor: '#27272a',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginHorizontal: -5,
-  },
-  actionCard: {
-    width: '48%',
-    marginHorizontal: '1%',
-    marginBottom: 12,
-    borderRadius: 10,
-    padding: 16,
+  drawerHeader: {
+    paddingTop: 40,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
   },
-  actionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  userAvatar: {
+    marginBottom: 12,
   },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  infoBox: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
     marginBottom: 4,
-    textTransform: 'uppercase',
   },
-  infoValue: {
-    fontSize: 15,
+  userRole: {
+    fontSize: 14,
+    color: '#a1a1aa',
+  },
+  menuList: {
+    padding: 12,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  menuItemActive: {
+    backgroundColor: '#3f3f46',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#a1a1aa',
+    marginLeft: 16,
     fontWeight: '500',
   },
-  tipsText: {
-    fontSize: 13,
-    lineHeight: 20,
+  menuItemTextActive: {
+    color: '#7c3aed',
+    fontWeight: '600',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#3f3f46',
+    marginVertical: 12,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#ef4444',
+    marginLeft: 16,
+    fontWeight: '600',
   },
 });
+

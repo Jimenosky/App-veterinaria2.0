@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/apiClient';
 import CitasTable from '../components/CitasTable';
 import UsuariosTable from '../components/UsuariosTable';
+import MascotasTable from '../components/MascotasTable';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -23,14 +24,16 @@ export default function Dashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const [citasRes, usuariosRes] = await Promise.all([
+      const [citasRes, usuariosRes, mascotasRes] = await Promise.all([
         apiClient.get('/citas/admin/all').catch(() => ({ data: { success: false, data: [] } })),
         apiClient.get('/users?limit=1000').catch(() => ({ data: { success: false, data: [] } })),
+        apiClient.get('/mascotas/admin/all').catch(() => ({ data: { success: false, data: [] } })),
       ]);
 
       let pendientes = 0;
       let totalCitas = 0;
       let totalUsuarios = 0;
+      let totalMascotas = 0;
       
       if (citasRes.data.success && citasRes.data.data) {
         const citas = citasRes.data.data;
@@ -41,12 +44,16 @@ export default function Dashboard() {
       if (usuariosRes.data.success && usuariosRes.data.data) {
         totalUsuarios = usuariosRes.data.data.length;
       }
+
+      if (mascotasRes.data.success && mascotasRes.data.data) {
+        totalMascotas = mascotasRes.data.data.length;
+      }
       
       setStats({
         totalCitas,
         totalUsuarios,
         citasPendientes: pendientes,
-        totalMascotas: 0,
+        totalMascotas,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -74,6 +81,12 @@ export default function Dashboard() {
             onClick={() => setActiveTab('citas')}
           >
             📅 Citas
+          </button>
+          <button
+            className={`nav-item ${activeTab === 'mascotas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('mascotas')}
+          >
+            🐾 Mascotas
           </button>
           <button
             className={`nav-item ${activeTab === 'usuarios' ? 'active' : ''}`}
@@ -118,7 +131,8 @@ export default function Dashboard() {
               <h3>Total Mascotas</h3>
               <p className="stat-number">{stats.totalMascotas}</p>
             </div>
-          </div>
+          </div>mascotas' && <MascotasTable />}
+          {activeTab === '
         )}
 
         <div className="content-area">

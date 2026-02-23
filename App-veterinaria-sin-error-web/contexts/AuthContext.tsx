@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: User }>;
   logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<boolean>;
   isLoading: boolean;
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadStoredAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; user?: User }> => {
     try {
       let baseUrl = getBaseUrl();
       // Evitar duplicación de /api/v1/
@@ -87,18 +87,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.success) {
         const { user, token } = data.data;
+        console.log('\n=== AuthContext Login Success ===');
+        console.log('User object:', user);
+        console.log('User rol:', user.rol);
+        console.log('User email:', user.email);
+        console.log('================================\n');
         setUser(user);
         setToken(token);
         await AsyncStorage.setItem('token', token);
         await AsyncStorage.setItem('user', JSON.stringify(user));
-        return true;
+        return { success: true, user };
       } else {
         console.log('Login failed:', data.message);
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      return { success: false };
     }
   };
 

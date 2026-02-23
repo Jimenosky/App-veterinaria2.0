@@ -3,31 +3,46 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { LinearGradient } from 'expo-linear-gradient';
 import { Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState(''); // 'success' | 'error'
+  const [messageType, setMessageType] = useState('');
   const [buttonScale] = useState(new Animated.Value(1));
-  const [bgAnim] = useState(new Animated.Value(0));
   const [colorAnim] = useState(new Animated.Value(0));
   const [fieldsAnim] = useState(new Animated.Value(0));
-  // Animación de fondo degradado
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(bgAnim, {
-        toValue: 1,
-        duration: 6000,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      })
-    ).start();
-  }, [bgAnim]);
-  // Animación de color sincronizada
+  const router = useRouter();
+
+  const getPasswordStrength = (pass: string) => {
+    if (pass.length === 0) return { strength: 'none', color: '#6366f1', width: '0%', text: '' };
+    if (pass.length < 6) return { strength: 'weak', color: '#dc2626', width: '33%', text: 'Débil' };
+    
+    let strength = 0;
+    if (pass.length >= 8) strength++;
+    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[^a-zA-Z0-9]/.test(pass)) strength++;
+    
+    if (strength <= 1) return { strength: 'weak', color: '#dc2626', width: '33%', text: 'Débil' };
+    if (strength === 2) return { strength: 'medium', color: '#f59e0b', width: '66%', text: 'Media' };
+    return { strength: 'strong', color: '#10b981', width: '100%', text: 'Fuerte' };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const callEmergency = () => {
+    Linking.openURL('tel:555555555');
+  };
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -44,7 +59,7 @@ export default function LoginScreen() {
       ])
     ).start();
   }, [colorAnim]);
-  // Animación de entrada de campos
+
   useEffect(() => {
     Animated.timing(fieldsAnim, {
       toValue: 1,
@@ -53,20 +68,6 @@ export default function LoginScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
-  const { login } = useAuth();
-
-  // Navegación a registro
-  const goToRegister = () => {
-    router.push('/register');
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const callEmergency = () => {
-    Linking.openURL('tel:555555555');
-  };
 
   const animateButton = () => {
     Animated.sequence([
@@ -83,14 +84,13 @@ export default function LoginScreen() {
     ]).start();
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setMessage('Por favor ingresa email y contraseña');
+  const handleRegister = async () => {
+    if (!name || !email || !password || !phone) {
+      setMessage('Por favor completa todos los campos');
       setMessageType('error');
       return;
     }
 
-    // Validación de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setMessage('El correo no tiene un formato válido');
@@ -98,41 +98,62 @@ export default function LoginScreen() {
       return;
     }
 
-    // Validación de contraseña
     if (password.length < 6) {
       setMessage('La contraseña debe tener al menos 6 caracteres');
       setMessageType('error');
       return;
     }
 
+    if (phone.length < 8) {
+      setMessage('El teléfono debe tener al menos 8 dígitos');
+      setMessageType('error');
+      return;
+    }
+
     animateButton();
-    const result = await login(email, password);
-    console.log('\n=== Login Debug ===');
-    console.log('Login result:', result);
-    console.log('User rol:', result.user?.rol);
-    console.log('===================\n');
-    
-    if (result.success && result.user) {
-      setMessage('¡Inicio de sesión exitoso!');
-      setMessageType('success');
-      
-      setTimeout(() => {
-        // Si es administrador, ir al panel admin integrado
-        if (result.user?.rol === 'admin') {
-          console.log('➡️ Navigating to /admin (admin user)');
-          router.replace('/admin');
-        } else {
-          console.log('➡️ Navigating to / (client user)');
-          // Si es cliente, ir a la app normal
-          router.replace('/');
-        }
-      }, 800);
-    } else {
-      setMessage('❌ Credenciales incorrectas');
+    const userData = {
+      nombre: name,
+      email,
+      password,
+      telefono: phone,
+      direccion: '',
+    };
+
+    try {
+      const response = await fetch('https://api-express-mysql-de-jime.onrender.com/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        setMessage('Respuesta inválida del servidor');
+        setMessageType('error');
+        return;
+      }
+
+      if (response.ok && data.success) {
+        setMessage('¡Registro exitoso!');
+        setMessageType('success');
+        setTimeout(() => {
+          setMessage('');
+          setMessageType('');
+          router.push('/login');
+        }, 1500);
+      } else {
+        setMessage((data && data.message) ? data.message : 'Error al registrar');
+        setMessageType('error');
+      }
+    } catch (error) {
+      setMessage('Error de conexión con el servidor: ' + (error?.message || error));
       setMessageType('error');
     }
 
-    // Limpiar mensaje después de 3.5s
     setTimeout(() => {
       setMessage('');
       setMessageType('');
@@ -140,27 +161,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <Animated.View
-      style={{
-        flex: 1,
-        backgroundColor: '#232526',
-      }}
-    >
-      <Animated.View
-        style={[
-          animatedBg,
-          {
-            opacity: bgAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.8, 1],
-            }),
-            backgroundColor: bgAnim.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: ['#232526', '#7c3aed', '#232526'],
-            }),
-          },
-        ]}
-      />
+    <Animated.View style={{ flex: 1, backgroundColor: '#232526' }}>
       <LinearGradient
         colors={['#232526cc', '#7c3aedcc', '#232526cc']}
         style={styles.container}
@@ -199,7 +200,7 @@ export default function LoginScreen() {
               >
                 VetNova
               </Animated.Text>
-              <Text style={styles.subtitle}>Bienvenido a tu veterinaria digital</Text>
+              <Text style={styles.subtitle}>Crea tu cuenta para acceder</Text>
             </View>
             <Animated.View style={{
               opacity: fieldsAnim,
@@ -207,15 +208,37 @@ export default function LoginScreen() {
               width: '100%',
             }}>
               <View style={styles.form}>
+                <View style={[styles.inputContainer, name ? styles.inputActive : null]}>
+                  <Ionicons name="person" size={20} color="#a1a1aa" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nombre"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
                 <View style={[styles.inputContainer, email ? styles.inputActive : null]}>
                   <Ionicons name="mail" size={20} color="#a1a1aa" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
                     value={email}
-                    onChangeText={(text: string) => setEmail(text.toLowerCase())}
+                    onChangeText={(text) => setEmail(text.toLowerCase())}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    placeholderTextColor="#9ca3af"
+                  />
+                </View>
+                <View style={[styles.inputContainer, phone ? styles.inputActive : null]}>
+                  <Ionicons name="call" size={20} color="#a1a1aa" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Teléfono"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
                     placeholderTextColor="#9ca3af"
                   />
                 </View>
@@ -225,7 +248,7 @@ export default function LoginScreen() {
                     style={styles.input}
                     placeholder="Contraseña"
                     value={password}
-                    onChangeText={(text: string) => setPassword(text.trim())}
+                    onChangeText={(text) => setPassword(text.trim())}
                     secureTextEntry={!showPassword}
                     placeholderTextColor="#9ca3af"
                   />
@@ -237,23 +260,36 @@ export default function LoginScreen() {
                     />
                   </TouchableOpacity>
                 </View>
+                {password.length > 0 && (
+                  <View style={styles.passwordStrengthContainer}>
+                    <View style={styles.passwordStrengthBar}>
+                      <View style={[styles.passwordStrengthFill, { width: passwordStrength.width, backgroundColor: passwordStrength.color }]} />
+                    </View>
+                    <Text style={[styles.passwordStrengthText, { color: passwordStrength.color }]}>
+                      {passwordStrength.text}
+                    </Text>
+                  </View>
+                )}
                 <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                  <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                  <TouchableOpacity style={styles.button} onPress={handleRegister}>
                     <LinearGradient
                       colors={['#7c3aed', '#38bdf8']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.buttonGradient}
                     >
-                      <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                      <Text style={styles.buttonText}>Registrarse</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </Animated.View>
                 {/* Enlace dentro del recuadro negro, debajo del botón */}
                 <View style={{ width: '100%', alignItems: 'center', marginTop: 8 }}>
-                  <TouchableOpacity onPress={goToRegister} style={{ backgroundColor: '#18181b', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 }}>
+                  <TouchableOpacity
+                    onPress={() => router.push('/login')}
+                    style={{ backgroundColor: '#18181b', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 }}
+                  >
                     <Text style={{ color: '#a1a1aa', fontSize: 16, textAlign: 'center' }}>
-                      ¿No tienes cuenta? <Text style={{ color: '#38bdf8', fontWeight: 'bold', textDecorationLine: 'underline' }}>Regístrate</Text>
+                      ¿Ya tienes cuenta? <Text style={{ color: '#38bdf8', fontWeight: 'bold', textDecorationLine: 'underline' }}>Inicia sesión</Text>
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -279,18 +315,7 @@ export default function LoginScreen() {
   );
 }
 
-// Definir el fondo animado fuera del StyleSheet
-const animatedBg = {
-  position: 'absolute' as const,
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: -1,
-};
-
 const styles = StyleSheet.create({
-  // El headerApp original ya no se usa fuera del card
   headerAppInsideCard: {
     width: '100%',
     alignItems: 'center',
@@ -340,6 +365,32 @@ const styles = StyleSheet.create({
     right: '8%',
     transform: [{ rotate: '-50deg' }],
   },
+  passwordStrengthContainer: {
+    width: '100%',
+    marginTop: -10,
+    marginBottom: 15,
+    paddingHorizontal: 5,
+  },
+  passwordStrengthBar: {
+    height: 4,
+    backgroundColor: '#27272a',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 5,
+  },
+  passwordStrengthFill: {
+    height: '100%',
+    borderRadius: 2,
+    transition: 'width 0.3s ease',
+  },
+  passwordStrengthText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  eyeIcon: {
+    padding: 5,
+  },
   cardWithTitle: {
     backgroundColor: '#18181b',
     borderRadius: 20,
@@ -367,47 +418,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     flexGrow: 1,
   },
-  card: {
-    backgroundColor: '#18181b',
-    borderRadius: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    width: '90%',
-    maxWidth: 400,
-    marginTop: 0,
-  },
-  appName: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 2,
-    textShadowColor: '#232526',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    fontFamily: 'Poppins-Bold', // Si está disponible
-  },
-  hospitalIcon: {
-    position: 'absolute',
-    bottom: -5,
-    right: -5,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 2,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#fafafa',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
   form: {
     width: '100%',
   },
@@ -425,6 +435,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
   },
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 2,
+    textShadowColor: '#232526',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    fontFamily: 'Poppins-Bold', // Si está disponible
+  },
   inputActive: {
     borderColor: '#38bdf8',
     shadowColor: '#38bdf8',
@@ -438,19 +460,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Poppins-Regular',
   },
-  registerLink: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  registerText: {
-    color: '#a1a1aa',
-    fontSize: 15,
-  },
-  registerTextBold: {
-    color: '#38bdf8',
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-  },
   inputIcon: {
     marginRight: 10,
   },
@@ -460,9 +469,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fafafa',
     letterSpacing: 0.5,
-  },
-  eyeIcon: {
-    padding: 5,
   },
   button: {
     backgroundColor: 'transparent',

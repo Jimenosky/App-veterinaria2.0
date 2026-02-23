@@ -18,23 +18,46 @@ function RootLayoutNav() {
   React.useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === 'login';
+    const inAuthGroup = segments[0] === 'login' || segments[0] === 'register' || segments[0] === 'welcome';
+    const inAdminPanel = segments[0] === 'admin';
 
-    if (!user && !inAuthGroup) {
-      console.log('User is null, redirecting to login...');
-      router.replace('/login');
-    } else if (user && inAuthGroup) {
-      console.log('User logged in, redirecting to home...');
-      router.replace('/');
+    console.log('\n=== _layout Navigation Debug ===');
+    console.log('User:', user ? `${user.email} (${user.rol})` : 'null');
+    console.log('Segments:', segments);
+    console.log('inAuthGroup:', inAuthGroup);
+    console.log('inAdminPanel:', inAdminPanel);
+    console.log('================================\n');
+
+    // Si no hay usuario y no está en pantallas de auth, ir a welcome
+    if (!user && !inAuthGroup && !inAdminPanel) {
+      console.log('➡️ Redirecting to welcome (no user)');
+      router.replace('/welcome');
+    } 
+    // Si hay usuario y está en pantallas de auth, redirigir según rol
+    else if (user && inAuthGroup) {
+      if (user.rol === 'admin') {
+        console.log('➡️ Redirecting admin to /admin');
+        router.replace('/admin');
+      } else {
+        console.log('➡️ Redirecting client to /');
+        router.replace('/');
+      }
+    }
+    // Si no hay usuario pero está en admin panel, redirigir a welcome
+    else if (!user && inAdminPanel) {
+      console.log('➡️ Redirecting to welcome (admin panel without user)');
+      router.replace('/welcome');
     }
   }, [user, segments, isLoading]);
 
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ title: 'Mi Perfil' }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="admin" options={{ headerShown: false }} />
     </Stack>
   );
 }
